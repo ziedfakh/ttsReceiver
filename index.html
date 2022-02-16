@@ -1,0 +1,96 @@
+<html>
+
+<script src="https://apis.google.com/js/api.js"></script>
+<script>
+  var mainFolder = "1WQ5Jr2FXnaHkz0YjLK-6IVLpDIOCHQXL";
+  var userName= "nmplol";
+  var userFolder="";
+  var currWav="-1.wav";
+  var audio = new Audio()
+  const options = {
+    header: {
+      "Accept": "application/json"
+    },
+    method:"GET"
+  };
+
+  function getParams() {
+    var idx = document.URL.indexOf('?');
+    var params = new Array();
+    if (idx != -1) {
+    var pairs = document.URL.substring(idx+1, document.URL.length).split('&');
+    for (var i=0; i<pairs.length; i++) {
+    nameVal = pairs[i].split('=');
+    params[nameVal[0]] = nameVal[1];
+       }
+    }
+    return params;
+  }
+
+  async function getContent(url){
+    var resp;
+    resp= fetch(url,options).then(function(response) {
+    return response.json();
+
+    })
+    return resp;
+   }
+
+  async function getUserFolder(){
+    url = "https://www.googleapis.com/drive/v3/files?q='"+mainFolder+"'%20in%20parents&key=AIzaSyDfZZspuvEV0WRMAKPX2YyMI2-Kv6cYcMQ";
+    userName=getParams().user
+    let res = await getContent(url);
+    console.log(res)
+    for (var i = res.files.length - 1; i >= 0; i--) {
+      var item = res.files[i];
+      if( item.mimeType=="application/vnd.google-apps.folder" && item.name==userName){
+        console.log(item)
+        userFolder = item.id;
+      }
+
+    }
+    setTimeout( function() { execute(); }, 200);
+
+  }
+
+  // Make sure the client is loaded before calling this method.
+  async function execute() {
+    url = "https://www.googleapis.com/drive/v3/files?q='"+userFolder+"'%20in%20parents&key=AIzaSyDfZZspuvEV0WRMAKPX2YyMI2-Kv6cYcMQ"
+    let res = await getContent(url)
+    var indx = currWav;
+    console.log(res);
+    for (var i = res.files.length - 1; i >= 0; i--) {
+      var item = res.files[i];
+      if( item.mimeType== "text/plain"){
+        indx=item.name.replace("txt","wav")
+        break
+      }
+    }
+
+    if(indx == "-1.wav"){
+        audio.pause();
+    }
+
+    if(indx != currWav){
+      currWav=indx;
+      console.log(currWav);
+      for (var i = res.files.length - 1; i >= 0; i--) {
+        var item = res.files[i];
+        if( item.mimeType== "audio/wav" && item.name==currWav ){
+          console.log(item.id);
+          audio = new Audio('https://docs.google.com/uc?export=download&id='+item.id);
+          audio.play();
+        } 
+      }
+    }    
+    setTimeout( function() { execute(); }, 200);
+  }
+
+
+
+  gapi.load("client");
+</script>
+
+
+  <body onload="getUserFolder()"> </body>
+</html>
